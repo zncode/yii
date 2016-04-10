@@ -17,10 +17,10 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['logout'],
+                'only' => ['mosquitto', 'logout'],
                 'rules' => [
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['mosquitto', 'logout'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -109,7 +109,7 @@ class SiteController extends Controller
         ]);
     }
     
-    public function actionMosquittoajax()
+    public function actionMosquittoajax1()
    {
         $redis          = Yii::$app->redis;
         $mac            = $_REQUEST['mac'];             //MAC地址
@@ -125,11 +125,46 @@ class SiteController extends Controller
         $msg_json = json_encode($msg_array);
 
         $client = new \Mosquitto\Client();
+        $client->connect("localhost", 1883, 5);
+        //$file = popen("php /var/www/wifibox/server.php {$mac}", 'r');
+       // print_r($file);
+       // pclose($file);
+       // die();
+        for($i=0;$i<3;$i++)
+        {
+            $client->publish($pub_topic, $msg_json, 1, 0);
+            sleep(1);
+        }
+        $client->disconnect();
+        unset($client);
+
+        //返回客户端数据
+        $back_result = json_decode($redis->get($id));
+        $back_result = $back_result->result;
+        return json_encode(array('code'=>0, 'msg'=>'successful!', 'data'=>$back_result));
+    }
+
+    public function actionMosquittoajax()
+   {
+        $redis          = Yii::$app->redis;
+        $mac            = $_REQUEST['mac'];             //MAC地址
+        $msg            = $_REQUEST['msg'];             //消息内容
+        $pub_topic      = "{$mac}/exec/cmd";            //推送主题
+        $sub_topic      = "{$mac}/exec/result";            //订阅主题
+        $id             = time() . rand(0001, 9999);        //随机ID
+        $msg_array      = array(
+            'id'        => $id,
+            'type'      => 'script',
+            'data'      => $msg,
+        );
+        $msg_json = json_encode($msg_array);
+
+        $client = new \Mosquitto\Client();
         $client->onMessage(function($message){
             $payload = json_decode($message->payload);
             $id     = $payload->id;
-            $result = $payload->result;
-            $mac    = $payload->mac;
+           // $result = $payload->result;
+           // $mac    = $payload->mac;
 
             //存储客户端数据
             $redis  = Yii::$app->redis;
@@ -153,6 +188,7 @@ class SiteController extends Controller
         $back_result = $back_result->result;
         return json_encode(array('code'=>0, 'msg'=>'successful!', 'data'=>$back_result));
     }
+
 
 
     public function actionSay($message = 'Hello')
