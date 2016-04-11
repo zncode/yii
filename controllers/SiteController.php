@@ -109,54 +109,20 @@ class SiteController extends Controller
         ]);
     }
     
-    public function actionMosquittoajax1()
-   {
-        $redis          = Yii::$app->redis;
-        $mac            = $_REQUEST['mac'];             //MAC地址
-        $msg            = $_REQUEST['msg'];             //消息内容
-        $pub_topic      = "{$mac}/exec/shell";          //推送主题
-        $sub_topic      = "{$mac}/exec/shell/result";   //订阅主题
-        $id             = time() . rand(0001, 9999);        //随机ID
-        $msg_array      = array(
-            'mac'       => $mac,
-            'script'    => $msg,
-            'id'        => $id,
-        );
-        $msg_json = json_encode($msg_array);
-
-        $client = new \Mosquitto\Client();
-        $client->connect("localhost", 1883, 5);
-        //$file = popen("php /var/www/wifibox/server.php {$mac}", 'r');
-       // print_r($file);
-       // pclose($file);
-       // die();
-        for($i=0;$i<3;$i++)
-        {
-            $client->publish($pub_topic, $msg_json, 1, 0);
-            sleep(1);
-        }
-        $client->disconnect();
-        unset($client);
-
-        //返回客户端数据
-        $back_result = json_decode($redis->get($id));
-        $back_result = $back_result->result;
-        return json_encode(array('code'=>0, 'msg'=>'successful!', 'data'=>$back_result));
-    }
-
     public function actionMosquittoajax()
-   {
-        $redis          = Yii::$app->redis;
+    {
         $mac            = $_REQUEST['mac'];             //MAC地址
         $msg            = $_REQUEST['msg'];             //消息内容
-        $id             = time() . rand(0001, 9999);        //随机ID
-        $id = 'testid1';
+        $id             = time().rand(1000,9999);       //随机ID
+        
         //调用发送进程
-        $file = popen("/usr/local/bin/php /var/www/wifibox/server.php {$mac} {$msg} {$id}", 'w');
+        $file = popen("/usr/local/bin/php /var/www/wifibox/server_pub.php '{$mac}' '{$msg}' '{$id}'", 'w');
         pclose($file);
+        
+        $redis          = Yii::$app->redis;
 
         //等待数据存储
-        sleep(6);
+        sleep(3);
 
         //返回客户端数据
         $result = $redis->get($id);
@@ -168,8 +134,6 @@ class SiteController extends Controller
             return json_encode(array('code'=>1, 'msg'=>'wrong!', 'data'=>'Data empty!'));
         }
     }
-
-
 
     public function actionSay($message = 'Hello')
     {

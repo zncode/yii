@@ -12,6 +12,7 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <?php
 $js = <<<JS
+
 $('form#mosquitto-form').on('beforeSubmit', function(e) {
    var form = $(this);
     mac = $('#mosquittoform-mac').val();
@@ -32,6 +33,7 @@ $.ajax({
 }).on('submit', function(e){
     e.preventDefault();
 });
+
 JS;
 $this->registerJs($js);
 ?>
