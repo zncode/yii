@@ -49,8 +49,7 @@ $this->registerJs($js);
     <?php else: ?>
 
         <p>
-            If you have business inquiries or other questions, please fill out the following form to contact us.
-            Thank you.
+            发送Message, 返回信息等待几秒.
         </p>
 
         <div class="row">
